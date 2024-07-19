@@ -3,22 +3,26 @@
 #include <thread>
 #include <ctime>
 #include <numbers>
-#include "resources/resources.h"
+#include <resources/resources.h>
 #include <math.h>
 
 const time_t J2000_EPOCH = 946684800; // January 1, 2000, 12:00 noon UTC
 const long double SECONDS_PER_DAY = 86400.0;
-int stepPin = 5;
-int dirPin = 4;
 
-struct Obsever
+class Observer
 {
-	double latitude = latitudeV; //+ to N
-	double longitude = longitudeV; //+ to E
-	double height = heightV;
+	double latitude = latitudeObserver; //+ to N
+	double longitude = longitudeObserver; //+ to E
+	double height = heightObserver;
+
+	void home(){
+		while(!homeCheck()){
+			// 
+		}
+	}
 };
 
-struct Sun
+class Sun
 {
 	double declination{};
 	double rightAscension{};
@@ -34,7 +38,7 @@ std::tm* UTCnow() {
 }
 
 long double getJulianDate(std::tm* now) {
-
+	// time is in UTC
     // Extract the year, month, and day
     int year = now->tm_year + 1900;
     int month = now->tm_mon + 1;
@@ -50,10 +54,10 @@ long double getJulianDate(std::tm* now) {
     }
 
     // Calculate Julian Date
-    int A = year / 100;
-    int B = 2 - A + (A / 4);
+    int centuriesSinceEpoch = year / 100;
+    int leapYearAdjustment = 2 - centuriesSinceEpoch + (centuriesSinceEpoch / 4);
 
-    long double JD = static_cast<int>(365.25 * (year + 4716)) + static_cast<int>(30.6001 * (month + 1)) + day + B - 1524.5;
+    long double JD = static_cast<int>(365.25 * (year + 4716)) + static_cast<int>(30.6001 * (month + 1)) + day + leapYearAdjustment - 1524.5;
     JD += (hour + minute / 60.0 + second / 3600.0) / 24.0;
 
 	// std::cout << std::format("{}", JD) << "\n";
@@ -80,8 +84,8 @@ long double getGMST(long double JD) {
 void sunCoords(){
 	using namespace std;
 	// https://en.wikipedia.org/wiki/Position_of_the_Sun
-	std::tm* utc = UTCnow();
-	long double JD = getJulianDate(utc);
+	std::tm* now = UTCnow();
+	long double JD = getJulianDate(now);
 
 	// days = days since J2000
 	long double days = JD - 2451545.0;
@@ -112,9 +116,9 @@ void sunCoords(){
 	cout << "Declination: " << declination << "\n";
 
 
-	long double gmst = getGMST(getJulianDate(utc));
+	long double gmst = getGMST(getJulianDate(now));
 	cout << "GMST: " << gmst << " deg, or " << gmst / 15.0 << "h\n";
-	long double lst = fmod(gmst + longitudeV, 360);
+	long double lst = fmod(gmst + longitudeObserver, 360);
 	cout << "LST: " << lst << "deg, or " << lst / 15.0 << "h\n";
 	long double lha = lst - rightAscension;
 	cout << "Hour Angle: " << lha << "deg \n";
